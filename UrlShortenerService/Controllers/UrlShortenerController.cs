@@ -1,36 +1,49 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using UrlShortener.API.Models.Dtos;
+using UrlShortener.API.Service;
 using UrlShortenerService.Repositories;
 
 namespace UrlShortenerService.Controllers
 {
     public class UrlShortenerController:ControllerBase
     {
-        private readonly IUrlMappingRepository _repository;
+        private readonly IUrlShortenerService _shortenerService;
 
-        public UrlShortenerController(IUrlMappingRepository repository)
+        public UrlShortenerController(IUrlShortenerService shortenerService)
         {
-            _repository = repository;
+            _shortenerService = shortenerService;
         }
 
         [HttpPost("shorten")]
-        public async Task<IActionResult> ShortenUrl([FromBody] string originalUrl)
+        public async Task<IActionResult> ShortenUrl([FromBody] UrlShortenerRequest request)
         {
-            var shortUrl = GenerateShortUrl();
-            var mapping = await _repository.CreateMappingAsync(originalUrl, shortUrl);
-            return Ok(mapping.ShortUrl);
+            try
+            {
+                var shortUrl = await _shortenerService.ShortenUrlAsync(request.OriginalUrl);
+                return Ok(new { ShortUrl = shortUrl });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet("{shortUrl}")]
-        public async Task<IActionResult> GetOriginalUrl(string shortUrl)
+        public async Task<IActionResult> RedirectUrl(string shortUrl)
         {
-            var mapping = await _repository.GetMappingByShortUrlAsync(shortUrl);
-            if (mapping == null) return NotFound();
-            return Redirect(mapping.OriginalUrl);
+            var originalUrl = await _shortenerService.GetOriginalUrlAsync(shortUrl);
+            return originalUrl == null
+                ? NotFound()
+                : Redirect(originalUrl);
         }
 
-        private string GenerateShortUrl()
+        [HttpGet("stats/{shortUrl}")]
+        public async Task<IActionResult> GetStats(string shortUrl)
         {
-            return Guid.NewGuid().ToString("N").Substring(0, 6);
+            var stats = await _shortenerService.GetUrlStatsAsync(shortUrl);
+            return stats == null
+                ? NotFound()
+                : Ok(stats);
         }
     }
 }
