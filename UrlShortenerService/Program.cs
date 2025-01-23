@@ -17,6 +17,18 @@ options.UseSqlServer(builder.Configuration.GetConnectionString("UrlShortenerDb")
 
 builder.Services.AddScoped<IUrlMappingRepository, UrlMappingRepository>();
 builder.Services.AddScoped<IUrlShortenerService, UrlShortener.API.Service.UrlShortenerService>();
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
