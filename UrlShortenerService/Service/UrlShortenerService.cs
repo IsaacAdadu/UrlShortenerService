@@ -15,23 +15,23 @@ namespace UrlShortener.API.Service
 
         public async Task<string> ShortenUrlAsync(string originalUrl)
         {
-            // Validate URL
+            
             if (!IsValidUrl(originalUrl))
                 throw new ArgumentException("Invalid URL");
 
-            // Check if URL already exists
+           
             var existingMapping = await _repository.GetByOriginalUrlAsync(originalUrl);
             if (existingMapping != null)
                 return existingMapping.ShortUrl;
 
-            // Generate unique short URL
+            
             string shortUrl;
             do
             {
                 shortUrl = GenerateShortUrl();
             } while (await _repository.GetMappingByShortUrlAsync(shortUrl) != null);
 
-            // Create and save mapping
+            
             await _repository.CreateMappingAsync(originalUrl, shortUrl);
             return shortUrl;
         }
@@ -42,7 +42,7 @@ namespace UrlShortener.API.Service
             if (mapping == null)
                 return null;
 
-            // Increment access count
+            
             await _repository.IncrementAccessCountAsync(shortUrl);
 
             return mapping.OriginalUrl;
@@ -63,7 +63,7 @@ namespace UrlShortener.API.Service
 
         private string GenerateShortUrl()
         {
-            // Generate a 7-character unique short URL
+            
             return Convert.ToBase64String(Guid.NewGuid().ToByteArray())
                 .Replace("/", "_")
                 .Replace("+", "-")
