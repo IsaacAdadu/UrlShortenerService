@@ -30,6 +30,22 @@ namespace UrlShortenerService.Repositories
             return await _context.UrlMappings
                 .FirstOrDefaultAsync(m => m.ShortUrl == shortUrl);
         }
+
+        public async Task<UrlMapping?> GetByOriginalUrlAsync(string originalUrl)
+        {
+            return await _context.UrlMappings
+                .FirstOrDefaultAsync(m => m.OriginalUrl == originalUrl);
+        }
+
+        public async Task IncrementAccessCountAsync(string shortUrl)
+        {
+            var mapping = await GetMappingByShortUrlAsync(shortUrl);
+            if (mapping != null)
+            {
+                mapping.AccessCount++;
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }
 
