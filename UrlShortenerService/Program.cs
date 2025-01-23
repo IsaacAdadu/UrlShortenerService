@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using UrlShortener.API.Service;
 using UrlShortenerService.Data;
 using UrlShortenerService.Repositories;
 
@@ -15,7 +16,7 @@ builder.Services.AddDbContext<UrlShortenerDbContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("UrlShortenerDb")));
 
 builder.Services.AddScoped<IUrlMappingRepository, UrlMappingRepository>();
-
+builder.Services.AddScoped<IUrlShortenerService, UrlShortener.API.Service.UrlShortenerService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
