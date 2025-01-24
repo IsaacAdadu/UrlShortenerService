@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using UrlShortener.API.Models.Dtos;
 using UrlShortener.API.Service;
 using UrlShortenerService.Repositories;
@@ -15,6 +16,7 @@ namespace UrlShortenerService.Controllers
         }
 
         [HttpPost("shorten")]
+        [EnableRateLimiting("ShortenRateLimit")]
         public async Task<IActionResult> ShortenUrl([FromBody] UrlShortenerRequest request)
         {
             try

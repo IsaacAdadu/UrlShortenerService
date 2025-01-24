@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.DataProtection.Repositories;
+using Microsoft.Extensions.Caching.Memory;
 using UrlShortener.API.Models.Dtos;
 using UrlShortenerService.Repositories;
 
@@ -7,13 +8,15 @@ namespace UrlShortener.API.Service
     public class UrlShortenerService:IUrlShortenerService
     {
         private readonly IUrlMappingRepository _repository;
+        private readonly IMemoryCache _cache;
 
-        public UrlShortenerService(IUrlMappingRepository repository)
+        public UrlShortenerService(IUrlMappingRepository repository, IMemoryCache cache)
         {
             _repository = repository;
+            _cache = cache;
         }
 
-        public async Task<string> ShortenUrlAsync(string originalUrl)
+        public async Task<string> ShortenUrlAsync(string originalUrl, TimeSpan? expiration = null)
         {
             
             if (!IsValidUrl(originalUrl))
@@ -31,18 +34,28 @@ namespace UrlShortener.API.Service
                 shortUrl = GenerateShortUrl();
             } while (await _repository.GetMappingByShortUrlAsync(shortUrl) != null);
 
-            
-            await _repository.CreateMappingAsync(originalUrl, shortUrl);
+            // Determine expiration time (if any)
+            DateTime? expiresAt = expiration.HasValue ? DateTime.UtcNow.Add(expiration.Value) : null;
+
+            await _repository.CreateMappingAsync(originalUrl, shortUrl, expiresAt);
+            _cache.Set(shortUrl, originalUrl, TimeSpan.FromMinutes(10));
             return shortUrl;
         }
 
         public async Task<string?> GetOriginalUrlAsync(string shortUrl)
         {
+            // Check cache first
+            if (_cache.TryGetValue(shortUrl, out string originalUrl))
+                return originalUrl;
+
+
             var mapping = await _repository.GetMappingByShortUrlAsync(shortUrl);
             if (mapping == null)
                 return null;
 
-            
+            // Cache the result
+            _cache.Set(shortUrl, mapping.OriginalUrl, TimeSpan.FromMinutes(10));
+
             await _repository.IncrementAccessCountAsync(shortUrl);
 
             return mapping.OriginalUrl;
@@ -82,5 +95,9 @@ namespace UrlShortener.API.Service
                 return false;
             }
         }
+
+
+
+        
     }
 }
